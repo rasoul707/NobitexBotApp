@@ -153,8 +153,8 @@ class _DashContentState extends State<DashContent> {
       // print(_result.toJson());
       // if (_result.ok!) {
       // account.label = 'رسول';
-      account.profileName = 'رسول احمدی فر';
-      account.balance = 15000;
+      // account.profileName = 'رسول احمدی فر';
+      // account.balance = 15000;
       setState(() {
         _account = account;
       });
