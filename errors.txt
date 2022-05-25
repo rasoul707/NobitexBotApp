@@ -1,0 +1,24 @@
+=> when no auth
+
+
+I/flutter (25085): 403
+I/flutter (25085): Forbidden
+
+
+
+
+=> when no internet
+
+
+I/flutter (25085): SocketException: Failed host lookup: 'iranocc.com' (OS Error: No address associated with hostname, errno = 7)
+I/flutter (25085): DioErrorType.other
+I/flutter (25085): SocketException: Failed host lookup: 'iranocc.com' (OS Error: No address associated with hostname, errno = 7)
+I/flutter (25085): null
+
+
+
+
+
+
+
+
