@@ -8,7 +8,7 @@ Future accountsDB() async {
     join(await getDatabasesPath(), 'accounts_db.db'),
     onCreate: (db, version) {
       return db.execute(
-        'CREATE TABLE accounts(id INTEGER PRIMARY KEY, label TEXT, email TEXT, password TEXT, token TEXT, device TEXT)',
+        'CREATE TABLE accounts(id INTEGER PRIMARY KEY, label TEXT, email TEXT, password TEXT, token TEXT, device TEXT, profileName TEXT, balance DOUBLE)',
       );
     },
     version: 1,
@@ -72,13 +72,13 @@ Future<int?> getLastAccountID() async {
   return maps.isEmpty ? null : Account.fromJson(maps[0]).id;
 }
 
-Future<void> updateAccount(Account dog) async {
+Future<void> updateAccount(Account acc) async {
   final db = await accountsDB();
   await db.update(
     'accounts',
-    dog.toJson(),
+    acc.toJson(),
     where: 'id = ?',
-    whereArgs: [dog.id],
+    whereArgs: [acc.id],
   );
 }
 

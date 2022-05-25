@@ -10,11 +10,12 @@ import '../models/account.dart';
 import '../models/response.dart';
 import '../api/services.dart';
 import '../data/colors.dart';
-import '../data/strings.dart';
 import '../widgets/snackbar.dart';
 
 class DashContent extends StatefulWidget {
-  const DashContent({Key? key}) : super(key: key);
+  const DashContent(this.fromDBAccount, {Key? key}) : super(key: key);
+
+  final Account? fromDBAccount;
 
   @override
   _DashContentState createState() => _DashContentState();
@@ -22,31 +23,35 @@ class DashContent extends StatefulWidget {
 
 class _DashContentState extends State<DashContent> {
   int homeAccountID = 0;
-  Account _account = Account();
-  bool isOkAccount = false;
+  Account? _account;
   bool hasAccount = false;
+
+  final TextEditingController labelController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     SchedulerBinding.instance?.addPostFrameCallback((_) async {
-      int? lid = await getLastAccount();
-      if (lid is int) {
-        setHomeAccountID(lid);
-      } else {
-        int? llid = await getLastAccountID();
-        if (llid != null) {
-          setState(() {
-            hasAccount = true;
-          });
-          setHomeAccountID(llid);
-        } else {
-          setState(() {
-            hasAccount = false;
-          });
-        }
+      if (widget.fromDBAccount != null) {
+        setState(() {
+          hasAccount = true;
+        });
+        setHomeAccountID(
+          widget.fromDBAccount!.id,
+          fromDB: widget.fromDBAccount,
+        );
       }
     });
+  }
+
+  setHomeAccountID(v, {Account? fromDB}) {
+    setState(() {
+      homeAccountID = v;
+    });
+    setLastAccount(v);
+    _getAccount(fromDB: fromDB, noRefresh: true);
   }
 
   toSettingsScreen() {
@@ -60,114 +65,138 @@ class _DashContentState extends State<DashContent> {
         topRight: Radius.circular(30.0),
       ),
     );
-    int? data = await showModalBottomSheet(
+    Account? data = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: shape,
       backgroundColor: bgColor,
       builder: (_) {
-        return AddNewAccount();
+        return AddNewAccount(
+          labelController: labelController,
+          emailController: emailController,
+          passwordController: passwordController,
+        );
       },
     );
     //
-    if (data is int) {
-      setHomeAccountID(data);
+    if (data is Account) {
+      setHomeAccountID(
+        data.id,
+        fromDB: data,
+      );
+      setState(() {
+        hasAccount = true;
+      });
     }
+
+    labelController.clear();
+    emailController.clear();
+    passwordController.clear();
   }
 
-  _removeAccount(Account? account) async {
+  _removeAccount(Account? account, {bool? forceRemove}) async {
     if (account!.id is int) {
-      final bool? result = await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('حذف دسترسی اکانت'),
-            content: const Text('آیا مطمئنید؟'),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('انصراف'),
+      bool? result;
+      if (forceRemove == null || !forceRemove) {
+        result = await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('حذف دسترسی اکانت'),
+              content: const Text('آیا مطمئنید؟'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('بله'),
-              ),
-            ],
-          );
-        },
-      );
-      if (result is bool && result) {
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('انصراف'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('بله'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+
+      if ((result is bool && result) || (forceRemove is bool && forceRemove)) {
         ApiResponse _result =
             await Services.removeAccount(account.token!, null);
         print(account);
-        if (_result.ok!) {
-          await deleteAccount(account.id!);
+
+        await deleteAccount(account.id!);
+        //
+        if (account.id! == homeAccountID) {
           int? llid = await getLastAccountID();
-          if (account.id! == homeAccountID) {
-            if (llid != null) {
-              setState(() {
-                hasAccount = true;
-              });
-              setHomeAccountID(llid);
-            } else {
-              setState(() {
-                hasAccount = false;
-                isOkAccount = false;
-              });
-            }
+          if (llid != null) {
+            setState(() {
+              hasAccount = true;
+            });
+            setHomeAccountID(llid);
+          } else {
+            setState(() {
+              hasAccount = false;
+              _account = null;
+            });
           }
-          RSnackBar.success(context, "با موفقیت حذف شد :)");
-          Navigator.pop(context);
         } else {
-          RSnackBar.error(context, "خطایی رخ داد :(");
+          setState(() {
+            hasAccount = true;
+          });
+        }
+        //
+        if (forceRemove is bool && forceRemove) {
+          RSnackBar.error(
+            context,
+            "دسترستی شما به پایان رسید. مجدد لاگین کنید",
+          );
+        } else {
+          RSnackBar.success(context, "با موفقیت حذف شد :)");
           Navigator.pop(context);
         }
       }
     }
   }
 
-  setHomeAccountID(v) {
-    setState(() {
-      homeAccountID = v;
-    });
-    setLastAccount(v);
-    _getAccount();
-  }
-
-  Future<void> _getAccount() async {
-    final Account? account = await getAccountByID(homeAccountID);
-    print("object");
-    if (account == null) {
-      setState(() {
-        isOkAccount = false;
-      });
+  Future<void> _getAccount({Account? fromDB, bool? noRefresh}) async {
+    Account? account;
+    if (fromDB != null) {
+      account = fromDB;
     } else {
+      account = await getAccountByID(homeAccountID);
+    }
+    //
+    if (account != null) {
+      if (noRefresh is bool && noRefresh) {
+        setState(() {
+          _account = account;
+        });
+      }
+
+      ErrorAction _err = ErrorAction(response: ((res) {
+        _removeAccount(account, forceRemove: true);
+      }));
+
+      ApiResponse _result = await Services.getAccount(account.token!, _err);
+
+      if (_result.ok!) {
+        account.balance = _result.account?.balance;
+      }
+
       setState(() {
         _account = account;
-        isOkAccount = true;
       });
-      // ApiResponse _result = await Services.getAccount(account.token!, null);
-      // print(_result.toJson());
-      // if (_result.ok!) {
-      // account.label = 'رسول';
-      // account.profileName = 'رسول احمدی فر';
-      // account.balance = 15000;
-      setState(() {
-        _account = account;
-      });
-      // }
+
+      updateAccount(account);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    print("update dash");
-    //
-
-    //
+    print("fff");
     final Drawer _drawer = Drawer(
       child: Column(
         mainAxisSize: MainAxisSize.max,
@@ -256,10 +285,10 @@ class _DashContentState extends State<DashContent> {
       ),
     );
     //
-    Widget _body = Container();
+    Widget _body;
     PreferredSizeWidget? _appBar;
-    if (isOkAccount) {
-      _body = AccountHome(homeAccountID, _account, _getAccount);
+    if (_account != null) {
+      _body = AccountHome(_account!, _getAccount);
     } else {
       if (hasAccount) {
         _body = Container(
@@ -292,7 +321,7 @@ class _DashContentState extends State<DashContent> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {},
+            onPressed: toSettingsScreen,
             tooltip: "تنظیمات",
           ),
         ],

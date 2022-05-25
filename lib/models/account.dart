@@ -30,7 +30,7 @@ class Account {
 
   @override
   String toString() {
-    return 'Account{id: $id, label: $label, email: $email, password: $password, token: $token, device: $device}';
+    return 'Account{id: $id, label: $label, email: $email, password: $password, token: $token, device: $device, profileName: $profileName, balance: $balance}';
   }
 }
 

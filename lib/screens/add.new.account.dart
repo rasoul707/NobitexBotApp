@@ -7,13 +7,19 @@ import '../database/accounts_db.dart';
 import '../widgets/snackbar.dart';
 
 class AddNewAccount extends StatelessWidget {
-  AddNewAccount({Key? key, this.listController}) : super(key: key);
+  const AddNewAccount({
+    Key? key,
+    this.listController,
+    required this.labelController,
+    required this.emailController,
+    required this.passwordController,
+  }) : super(key: key);
 
   final ScrollController? listController;
 
-  final TextEditingController labelController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController labelController;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
 
   submit(context) async {
     final String label = labelController.text;
@@ -40,7 +46,7 @@ class AddNewAccount extends StatelessWidget {
         account.id = await insertAccount(account);
         RSnackBar.success(context, "حساب کاربری جدید اضافه شد :)");
       }
-      Navigator.pop(context, account.id);
+      Navigator.pop(context, account);
     } else {
       Navigator.pop(context);
       RSnackBar.error(context, "خطایی رخ داد :(");

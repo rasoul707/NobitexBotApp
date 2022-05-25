@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:page_transition/page_transition.dart';
 import 'package:theme_mode_handler/theme_mode_handler.dart';
 
 import 'api/services.dart';
 import 'data/strings.dart';
 
+import 'database/accounts_db.dart';
+import 'models/account.dart';
+import 'models/response.dart';
 import 'screens/splash.dart';
 import 'screens/dash.dart';
 
@@ -65,51 +69,46 @@ class _RootAppState extends State<RootApp> {
   @override
   void initState() {
     super.initState();
-    authentication();
+    preparing();
   }
 
   // check token valid
-  Future<void> authentication() async {
-    bool showDashboard = false;
-    // bool hasUser = await hasUserData();
+  Future<void> preparing() async {
+    Account? showAccount;
 
-    // error action
-    // ErrorAction _err = ErrorAction(
-    //   response: (r) {
-    //     showDashboard = false;
-    //   },
-    //   connection: () async {
-    //     if (hasUser) {
-    //       showDashboard = true;
-    //     } else {
-    //       showDashboard = false;
-    //     }
-    //   },
-    //   cancel: () {
-    //     showDashboard = true;
-    //   },
-    // );
+    int? accID;
+    int? lid = await getLastAccount();
+    if (lid is int) {
+      accID = lid;
+    } else {
+      int? llid = await getLastAccountID();
+      if (llid != null) {
+        accID = llid;
+      }
+    }
 
-    // String _result = await Services.authentication(_err);
-    // print(_result);
+    if (accID != null) {
+      final Account? account = await getAccountByID(accID);
+      if (account != null) {
+        showAccount = account;
+      }
+    }
 
-    // okay
-    // if (_result.isNotEmpty) showDashboard = true;
+    await Future.delayed(const Duration(seconds: 2));
 
     // finish
-    // Navigator.pushReplacement(
-    //   context,
-    //   PageTransition(
-    //     type: PageTransitionType.rightToLeft,
-    //     child: (showDashboard && hasUser)
-    //         ? const DashContent()
-    //         : const AuthContent(),
-    //   ),
-    // );
+    Navigator.pushReplacement(
+      context,
+      PageTransition(
+        type: PageTransitionType.rightToLeft,
+        child: DashContent(showAccount),
+      ),
+    );
+    //
   }
 
   @override
   Widget build(BuildContext context) {
-    return const DashContent();
+    return const SplashScreen();
   }
 }

@@ -1,23 +1,16 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:nobibot/data/colors.dart';
 
-import '../api/services.dart';
-import '../data/strings.dart';
-import '../database/accounts_db.dart';
 import '../models/account.dart';
-import '../models/response.dart';
 
 class AccountHome extends StatefulWidget {
   const AccountHome(
-    this.accountID,
     this.account,
     this.getAccount, {
     Key? key,
   }) : super(key: key);
-  final int accountID;
   final Account account;
   final Future<void> Function() getAccount;
   @override
@@ -36,6 +29,10 @@ class _AccountHomeState extends State<AccountHome>
     super.initState();
     // _getAccount();
     tabController = TabController(length: 2, vsync: this);
+  }
+
+  toSettingsScreen() {
+    print("toSettingsScreen");
   }
 
   @override
@@ -58,7 +55,7 @@ class _AccountHomeState extends State<AccountHome>
           actions: [
             IconButton(
               icon: const Icon(Icons.settings),
-              onPressed: () {},
+              onPressed: toSettingsScreen,
               tooltip: "تنظیمات",
             ),
           ],
