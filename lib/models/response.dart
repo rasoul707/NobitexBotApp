@@ -1,5 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:nobibot/models/account.dart';
+import './account.dart';
+import 'order.dart';
+import 'property.dart';
 
 part 'response.g.dart';
 
@@ -10,6 +12,8 @@ class ApiResponse {
   String? message;
   AddAccountRes? addAccount;
   Account? account;
+  List<Order>? orders;
+  List<Property>? properties;
 
   ApiResponse({
     this.ok,
@@ -17,6 +21,8 @@ class ApiResponse {
     this.message,
     this.addAccount,
     this.account,
+    this.orders,
+    this.properties,
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) =>

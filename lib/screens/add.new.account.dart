@@ -1,32 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:nobibot/models/account.dart';
-import 'package:nobibot/models/response.dart';
 
 import '../api/services.dart';
 import '../database/accounts_db.dart';
+import '../helpers/keyboard.visible.dart';
 import '../widgets/snackbar.dart';
+import '../models/account.dart';
+import '../models/response.dart';
 
-class AddNewAccount extends StatelessWidget {
+class AddNewAccount extends StatefulWidget {
   const AddNewAccount({
     Key? key,
-    this.listController,
     required this.labelController,
     required this.emailController,
     required this.passwordController,
   }) : super(key: key);
 
-  final ScrollController? listController;
-
   final TextEditingController labelController;
   final TextEditingController emailController;
   final TextEditingController passwordController;
 
+  @override
+  _AddNewAccountState createState() => _AddNewAccountState();
+}
+
+class _AddNewAccountState extends State<AddNewAccount> {
+  bool disabled = false;
+
   submit(context) async {
-    final String label = labelController.text;
-    final String email = emailController.text;
-    final String password = passwordController.text;
+    final String label = widget.labelController.text;
+    final String email = widget.emailController.text;
+    final String password = widget.passwordController.text;
 
     AddAccountReq accountReq = AddAccountReq(email: email, password: password);
+
+    setState(() {
+      disabled = true;
+    });
 
     ApiResponse _result = await Services.addAccount(accountReq, null);
     if (_result.ok!) {
@@ -69,7 +78,6 @@ class AddNewAccount extends StatelessWidget {
             initialChildSize: 0.55,
             builder: (_, c) {
               return Container(
-                color: Colors.transparent,
                 padding: const EdgeInsets.all(15),
                 child: ListView(
                   controller: c,
@@ -92,7 +100,7 @@ class AddNewAccount extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 15),
           child: TextFormField(
-            controller: labelController,
+            controller: widget.labelController,
             textInputAction: TextInputAction.next,
             textDirection: TextDirection.rtl,
             enableSuggestions: false,
@@ -102,12 +110,13 @@ class AddNewAccount extends StatelessWidget {
               labelText: "عنوان",
               prefixIcon: Icon(Icons.label),
             ),
+            enabled: !disabled,
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 15),
           child: TextFormField(
-            controller: emailController,
+            controller: widget.emailController,
             textInputAction: TextInputAction.next,
             textDirection: TextDirection.ltr,
             enableSuggestions: false,
@@ -117,12 +126,13 @@ class AddNewAccount extends StatelessWidget {
               labelText: "ایمیل",
               prefixIcon: Icon(Icons.alternate_email),
             ),
+            enabled: !disabled,
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 15),
           child: TextFormField(
-            controller: passwordController,
+            controller: widget.passwordController,
             textInputAction: TextInputAction.next,
             textDirection: TextDirection.ltr,
             enableSuggestions: false,
@@ -132,74 +142,17 @@ class AddNewAccount extends StatelessWidget {
               labelText: "گذرواژه",
               prefixIcon: Icon(Icons.lock_outline),
             ),
+            enabled: !disabled,
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 15, left: 25, right: 25),
           child: ElevatedButton(
-            onPressed: () {
-              submit(context);
-            },
+            onPressed: disabled ? null : () => submit(context),
             child: const Text("افزودن"),
           ),
         ),
       ],
     );
   }
-}
-
-/// Calls `builder` on keyboard close/open.
-/// https://stackoverflow.com/a/63241409/1321917
-class KeyboardVisibilityBuilder extends StatefulWidget {
-  final List<Widget> children;
-  final Widget Function(
-    BuildContext context,
-    List<Widget> children,
-    bool isKeyboardVisible,
-    double bottomInset,
-  ) builder;
-
-  const KeyboardVisibilityBuilder({
-    Key? key,
-    required this.children,
-    required this.builder,
-  }) : super(key: key);
-
-  @override
-  _KeyboardVisibilityBuilderState createState() =>
-      _KeyboardVisibilityBuilderState();
-}
-
-class _KeyboardVisibilityBuilderState extends State<KeyboardVisibilityBuilder>
-    with WidgetsBindingObserver {
-  var _isKeyboardVisible = false;
-  var _bottomInset = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance?.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance?.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeMetrics() {
-    final bottomInset = WidgetsBinding.instance?.window.viewInsets.bottom;
-    final newValue = bottomInset! > 0.0;
-    if (newValue != _isKeyboardVisible) {
-      setState(() {
-        _isKeyboardVisible = newValue;
-        _bottomInset = bottomInset;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.builder(
-      context, widget.children, _isKeyboardVisible, _bottomInset);
 }

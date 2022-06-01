@@ -10,7 +10,7 @@
    <application
         android:label="NobiBot"
         android:name="${applicationName}"
-        android:icon="@mipmap/rc_icon"
+        android:icon="@mipmap/icon"
         >
         <activity
             android:name=".MainActivity"

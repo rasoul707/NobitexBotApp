@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:page_transition/page_transition.dart';
 
 import '../helpers/localstorage.dart';
+import '../models/order.dart';
+import '../models/property.dart';
 import 'account.home.dart';
 import '../screens/add.new.account.dart';
 import '../database/accounts_db.dart';
@@ -25,6 +26,9 @@ class _DashContentState extends State<DashContent> {
   int homeAccountID = 0;
   Account? _account;
   bool hasAccount = false;
+
+  List<Order> orders = [];
+  List<Property> properties = [];
 
   final TextEditingController labelController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -59,17 +63,9 @@ class _DashContentState extends State<DashContent> {
   }
 
   addNewAccount() async {
-    const shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(30.0),
-        topRight: Radius.circular(30.0),
-      ),
-    );
     Account? data = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: shape,
-      backgroundColor: bgColor,
       builder: (_) {
         return AddNewAccount(
           labelController: labelController,
@@ -79,6 +75,7 @@ class _DashContentState extends State<DashContent> {
       },
     );
     //
+
     if (data is Account) {
       setHomeAccountID(
         data.id,
@@ -104,9 +101,6 @@ class _DashContentState extends State<DashContent> {
             return AlertDialog(
               title: const Text('حذف دسترسی اکانت'),
               content: const Text('آیا مطمئنید؟'),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.0),
-              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
@@ -176,14 +170,16 @@ class _DashContentState extends State<DashContent> {
         });
       }
 
-      ErrorAction _err = ErrorAction(response: ((res) {
-        _removeAccount(account, forceRemove: true);
-      }));
-
-      ApiResponse _result = await Services.getAccount(account.token!, _err);
+      ApiResponse _result = await Services.getAccount(account.token!, null);
 
       if (_result.ok!) {
         account.balance = _result.account?.balance;
+      } else {
+        if (_result.code == 'EXPIRE_SESSION') {
+          _removeAccount(account, forceRemove: true);
+        } else {
+          RSnackBar.error(context, "مشکلی پیش آمده است");
+        }
       }
 
       setState(() {
@@ -191,12 +187,28 @@ class _DashContentState extends State<DashContent> {
       });
 
       updateAccount(account);
+
+      ApiResponse ordersRes = await Services.getOrders(_account!.token!, null);
+
+      if (ordersRes.ok! && ordersRes.orders != null) {
+        setState(() {
+          orders = ordersRes.orders!;
+        });
+      }
+
+      ApiResponse propertiesRes =
+          await Services.getProperties(_account!.token!, null);
+
+      if (propertiesRes.ok! && propertiesRes.properties != null) {
+        setState(() {
+          properties = propertiesRes.properties!;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    print("fff");
     final Drawer _drawer = Drawer(
       child: Column(
         mainAxisSize: MainAxisSize.max,
@@ -288,7 +300,12 @@ class _DashContentState extends State<DashContent> {
     Widget _body;
     PreferredSizeWidget? _appBar;
     if (_account != null) {
-      _body = AccountHome(_account!, _getAccount);
+      _body = AccountHome(
+        _account!,
+        _getAccount,
+        orders: orders,
+        properties: properties,
+      );
     } else {
       if (hasAccount) {
         _body = Container(

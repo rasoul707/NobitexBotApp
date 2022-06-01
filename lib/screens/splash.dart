@@ -29,33 +29,28 @@ class SplashScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const SizedBox(),
-                Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 20),
-                      child: Image(
-                        image: AssetImage("assets/images/splash.png"),
-                        width: 270,
-                      ),
-                    ),
-                    Text(
-                      appTitle,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    Text(
-                      appDesc,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 20),
+                  child: Image(
+                    image: AssetImage("assets/images/nobitex.png"),
+                    width: 150,
+                    color: Colors.white,
+                  ),
                 ),
-                SizedBox(
-                  height: 50.0,
-                  width: double.infinity,
+                Container(
+                  // color: Colors.white,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(50),
+                    color: Colors.white,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
                   child: Text(
-                    appVer,
-                    style: Theme.of(context).textTheme.labelLarge,
+                    appDesc,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Colors.purple,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                 ),

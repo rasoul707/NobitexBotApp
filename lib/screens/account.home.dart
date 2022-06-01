@@ -2,15 +2,26 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:nobibot/data/colors.dart';
+import 'package:nobibot/models/property.dart';
 
+import '../api/services.dart';
 import '../models/account.dart';
+import '../models/order.dart';
+import '../models/response.dart';
+import '../widgets/snackbar.dart';
+import 'add.new.order.dart';
 
 class AccountHome extends StatefulWidget {
   const AccountHome(
     this.account,
     this.getAccount, {
+    this.orders,
+    this.properties,
     Key? key,
   }) : super(key: key);
+
+  final List<Order>? orders;
+  final List<Property>? properties;
   final Account account;
   final Future<void> Function() getAccount;
   @override
@@ -23,11 +34,17 @@ class _AccountHomeState extends State<AccountHome>
       GlobalKey<RefreshIndicatorState>();
 
   TabController? tabController;
+  int tabSelected = 0;
+
+  void tabControllerChanged(int m) {
+    setState(() {
+      tabSelected = m;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    // _getAccount();
     tabController = TabController(length: 2, vsync: this);
   }
 
@@ -35,10 +52,135 @@ class _AccountHomeState extends State<AccountHome>
     print("toSettingsScreen");
   }
 
+  newOrder() async {
+    Order? order = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) {
+        return const AddNewOrder();
+      },
+    );
+
+    if (order is Order) {
+      RSnackBar.info(
+        context,
+        "در حال ارسال درخواست ...",
+        duration: const Duration(seconds: 60000),
+      );
+
+      ErrorAction _err = ErrorAction(
+        response: ((res) {
+          print("ffff");
+          print(res);
+        }),
+        connection: () {
+          print("cccc");
+        },
+      );
+
+      ApiResponse _result =
+          await Services.newOrder(widget.account.token!, order, _err);
+
+      RSnackBar.hide(context);
+      if (_result.ok!) {
+        RSnackBar.success(context, "سفارش شما با موفقیت ایجاد شد");
+      } else {
+        RSnackBar.error(context, "خطایی رخ داد");
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final Account _account = widget.account;
-    Future<void> Function() _getAccount = widget.getAccount;
+
+    List<Widget> tabContent = [];
+    if (widget.properties == null || widget.properties!.isEmpty) {
+      tabContent.add(
+        const SizedBox(
+          height: 100,
+          child: Center(
+            child: Text(
+              "دارایی پیدا نشد :(",
+              style: TextStyle(color: Color.fromARGB(255, 197, 197, 197)),
+            ),
+          ),
+        ),
+      );
+    } else {
+      tabContent.add(
+        Column(
+          children: widget.properties!.map((e) {
+            return ListTile(
+              title: Text(e.coin!),
+              subtitle: Text('میانگین: ' + e.avgPrice!.toString()),
+              leading: const Icon(
+                Icons.monetization_on,
+                color: Colors.amber,
+                size: 30,
+              ),
+              trailing: Text('حجم: ' + e.amount!.toString()),
+            );
+          }).toList(),
+        ),
+      );
+    }
+
+    if (widget.orders == null || widget.orders!.isEmpty) {
+      tabContent.add(
+        const SizedBox(
+          height: 100,
+          child: Center(
+            child: Text(
+              "سفارشی پیدا نشد :(",
+              style: TextStyle(color: Color.fromARGB(255, 197, 197, 197)),
+            ),
+          ),
+        ),
+      );
+    } else {
+      tabContent.add(
+        Column(
+          children: widget.orders!.map((e) {
+            var icon;
+            if (e.type == 'buy') {
+              icon = const Icon(
+                Icons.currency_exchange,
+                color: Colors.green,
+                size: 30,
+              );
+            } else {
+              icon = const Icon(
+                Icons.currency_exchange,
+                color: Colors.red,
+                size: 30,
+              );
+            }
+
+            if (e.actionType == 'stages') {
+              return ListTile(
+                title: Text(e.pair!),
+                subtitle: e.stages != null
+                    ? Text('تعداد پله: ' + e.stages!.length.toString())
+                    : null,
+                leading: icon,
+                trailing: Text('حجم کل: ' + e.totalAmount.toString()),
+              );
+            } else {
+              return ListTile(
+                title: Text(e.pair!),
+                subtitle: e.price != null
+                    ? Text('قیمت: ' + e.price!.toString())
+                    : null,
+                leading: icon,
+                trailing: Text('حجم: ' + e.amount.toString()),
+              );
+            }
+          }).toList(),
+        ),
+      );
+    }
+
     return NestedScrollView(
       headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) => [
         SliverAppBar(
@@ -65,117 +207,42 @@ class _AccountHomeState extends State<AccountHome>
         builder: (BuildContext context) {
           return Container(
             color: bgColor,
-            child: Stack(
-              children: [
-                CustomScrollView(
-                  slivers: [
-                    SliverPersistentHeader(
-                      pinned: true,
-                      floating: false,
-                      delegate: OurDelegate(
-                        toolBarHeight:
-                            MediaQuery.of(context).viewPadding.top + 0,
-                        openHeight: 180,
-                        closedHeight: 120,
-                        balance: _account.balance,
-                        onNewOrder: () {},
-                        tabBar: TabBar(
-                          controller: tabController,
-                          tabs: const [
-                            Tab(
-                              text: "دارایی ها",
-                            ),
-                            Tab(
-                              text: "سفارش ها",
-                            )
-                          ],
-                        ),
+            child: RefreshIndicator(
+              key: _refreshIndicatorKey,
+              onRefresh: widget.getAccount,
+              child: CustomScrollView(
+                slivers: [
+                  SliverPersistentHeader(
+                    pinned: true,
+                    floating: false,
+                    delegate: OurDelegate(
+                      toolBarHeight: MediaQuery.of(context).viewPadding.top + 0,
+                      openHeight: 250,
+                      closedHeight: 150,
+                      balance: _account.balance,
+                      onNewOrder: newOrder,
+                      tabBar: TabBar(
+                        controller: tabController,
+                        onTap: tabControllerChanged,
+                        tabs: const [
+                          Tab(
+                            text: "دارایی ها",
+                          ),
+                          Tab(
+                            text: "سفارش ها",
+                          )
+                        ],
                       ),
                     ),
-                  ],
-                ),
-                Positioned.fill(
-                  top: 217,
-                  child: TabBarView(
-                    controller: tabController,
-                    children: <Widget>[
-                      RefreshIndicator(
-                        key: _refreshIndicatorKey,
-                        onRefresh: _getAccount,
-                        // displacement: 100,
-                        child: ListView(
-                          padding: EdgeInsets.zero,
-                          children: [
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                            ListTile(
-                              title: Text("fgdgfd"),
-                            ),
-                          ],
-                        ),
-                      ),
-                      RefreshIndicator(
-                        // key: _refreshIndicatorKey,
-                        onRefresh: _getAccount,
-                        child: ListView(
-                          padding: EdgeInsets.zero,
-                          children: [
-                            ListTile(
-                              title: Text("sss"),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
-                ),
-              ],
+                  SliverToBoxAdapter(
+                    child: Container(
+                      // color: Colors.green,
+                      child: tabContent[tabSelected],
+                    ),
+                  )
+                ],
+              ),
             ),
           );
         },

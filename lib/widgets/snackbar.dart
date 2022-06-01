@@ -11,20 +11,7 @@ class RSnackBar {
     color: whiteTextColor,
   );
 
-  RSnackBar(BuildContext context, String text,
-      {this.textColor, this.snackColor, this.duration}) {
-    //
-    SnackBar sn = SnackBar(
-      content: Text(
-        text,
-        style: TextStyle(
-          fontFamily: 'Vazir',
-          color: textColor is Color ? textColor : whiteTextColor,
-        ),
-      ),
-      backgroundColor: snackColor is Color ? snackColor : infoColor,
-      duration: duration is Duration ? duration! : const Duration(seconds: 1),
-    );
+  RSnackBar(BuildContext context, SnackBar sn) {
     ScaffoldMessenger.of(context).showSnackBar(sn);
   }
 
@@ -62,5 +49,9 @@ class RSnackBar {
       duration: duration is Duration ? duration : const Duration(seconds: 1),
     );
     ScaffoldMessenger.of(context).showSnackBar(sn);
+  }
+
+  static hide(BuildContext context) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
   }
 }

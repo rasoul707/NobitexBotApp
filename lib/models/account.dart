@@ -1,5 +1,8 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import 'order.dart';
+import 'property.dart';
+
 part 'account.g.dart';
 
 @JsonSerializable()

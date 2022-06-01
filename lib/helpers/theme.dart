@@ -68,7 +68,7 @@ class AppTheme {
   );
 
   static final cardTheme = CardTheme(
-    color: textFieldBgColor,
+    color: Colors.purple,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(20.0),
     ),
@@ -97,6 +97,23 @@ class AppTheme {
     ),
   );
 
+  static const bottomSheetTheme = BottomSheetThemeData(
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(30.0),
+        topRight: Radius.circular(30.0),
+      ),
+    ),
+    backgroundColor: bgColor,
+  );
+
+  static final dialogTheme = DialogTheme(
+    backgroundColor: bgColor,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(20.0),
+    ),
+  );
+
   static ThemeData lightTheme = ThemeData(
     fontFamily: fontFamily,
     brightness: Brightness.light,
@@ -109,8 +126,10 @@ class AppTheme {
     inputDecorationTheme: inputDecTheme,
     elevatedButtonTheme: elevatedButtonTheme,
     dialogBackgroundColor: bgColor,
-    iconTheme: IconThemeData(color: textColor),
-    // cardTheme: cardTheme,
+    iconTheme: const IconThemeData(color: textColor),
+    cardTheme: cardTheme,
+    bottomSheetTheme: bottomSheetTheme,
+    dialogTheme: dialogTheme,
   );
 
   static ThemeData darkTheme = lightTheme;

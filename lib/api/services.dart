@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:nobibot/models/order.dart';
 import '../models/account.dart';
 import '../models/response.dart';
 
@@ -52,16 +53,35 @@ class Services {
           .addAccount(m)
           .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
 
-  static Future<ApiResponse> removeAccount(String m, ErrorAction? e) async =>
-      await API(await dioWithToken(m))
+  static Future<ApiResponse> removeAccount(String t, ErrorAction? e) async =>
+      await API(await dioWithToken(t))
           .removeAccount()
           .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
 
-  static Future<ApiResponse> getAccount(String m, ErrorAction? e) async =>
-      await API(await dioWithToken(m))
+  static Future<ApiResponse> getAccount(String t, ErrorAction? e) async =>
+      await API(await dioWithToken(t))
           .getAccount()
           .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
 
+  static Future<ApiResponse> newOrder(
+          String t, Order m, ErrorAction? e) async =>
+      await API(await dioWithToken(t))
+          .newOrder(m)
+          .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
+
+
+
+  static Future<ApiResponse> getProperties(String t, ErrorAction? e) async =>
+      await API(await dioWithToken(t))
+          .getProperties()
+          .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
+
+
+          
+  static Future<ApiResponse> getOrders(String t, ErrorAction? e) async =>
+      await API(await dioWithToken(t))
+          .getOrders()
+          .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
   //
   //
   ///************************************************/
