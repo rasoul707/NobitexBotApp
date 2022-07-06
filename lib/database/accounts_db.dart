@@ -8,7 +8,7 @@ Future accountsDB() async {
     join(await getDatabasesPath(), 'accounts_db.db'),
     onCreate: (db, version) {
       return db.execute(
-        'CREATE TABLE accounts(id INTEGER PRIMARY KEY, label TEXT, email TEXT, password TEXT, token TEXT, device TEXT, profileName TEXT, balance DOUBLE)',
+        'CREATE TABLE accounts(id INTEGER PRIMARY KEY, label TEXT, email TEXT, password TEXT, token TEXT, device TEXT, profileName TEXT, balance DOUBLE, ratio DOUBLE)',
       );
     },
     version: 1,

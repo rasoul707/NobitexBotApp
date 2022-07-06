@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:page_transition/page_transition.dart';
 
 import '../helpers/localstorage.dart';
 import '../models/order.dart';
@@ -12,6 +13,7 @@ import '../models/response.dart';
 import '../api/services.dart';
 import '../data/colors.dart';
 import '../widgets/snackbar.dart';
+import 'add.new.order.group.dart';
 
 class DashContent extends StatefulWidget {
   const DashContent(this.fromDBAccount, {Key? key}) : super(key: key);
@@ -56,10 +58,6 @@ class _DashContentState extends State<DashContent> {
     });
     setLastAccount(v);
     _getAccount(fromDB: fromDB, noRefresh: true);
-  }
-
-  toSettingsScreen() {
-    print("toSettingsScreen");
   }
 
   addNewAccount() async {
@@ -174,6 +172,30 @@ class _DashContentState extends State<DashContent> {
 
       if (_result.ok!) {
         account.balance = _result.account?.balance;
+
+        setState(() {
+          _account = account;
+        });
+
+        updateAccount(account);
+
+        ApiResponse ordersRes =
+            await Services.getOrders(_account!.token!, null);
+
+        if (ordersRes.ok! && ordersRes.orders != null) {
+          setState(() {
+            orders = ordersRes.orders!;
+          });
+        }
+
+        ApiResponse propertiesRes =
+            await Services.getProperties(_account!.token!, null);
+
+        if (propertiesRes.ok! && propertiesRes.properties != null) {
+          setState(() {
+            properties = propertiesRes.properties!;
+          });
+        }
       } else {
         if (_result.code == 'EXPIRE_SESSION') {
           _removeAccount(account, forceRemove: true);
@@ -181,30 +203,17 @@ class _DashContentState extends State<DashContent> {
           RSnackBar.error(context, "مشکلی پیش آمده است");
         }
       }
-
-      setState(() {
-        _account = account;
-      });
-
-      updateAccount(account);
-
-      ApiResponse ordersRes = await Services.getOrders(_account!.token!, null);
-
-      if (ordersRes.ok! && ordersRes.orders != null) {
-        setState(() {
-          orders = ordersRes.orders!;
-        });
-      }
-
-      ApiResponse propertiesRes =
-          await Services.getProperties(_account!.token!, null);
-
-      if (propertiesRes.ok! && propertiesRes.properties != null) {
-        setState(() {
-          properties = propertiesRes.properties!;
-        });
-      }
     }
+  }
+
+  newOrderGroup() async {
+    Navigator.push(
+      context,
+      PageTransition(
+        type: PageTransitionType.bottomToTop,
+        child: const AddNewOrderGroup(),
+      ),
+    );
   }
 
   @override
@@ -224,7 +233,7 @@ class _DashContentState extends State<DashContent> {
                       children: [
                         Positioned.fill(
                           child: Image.asset(
-                            'assets/images/drawerbg.jpg',
+                            'assets/images/drawable-back.jpg',
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -243,6 +252,17 @@ class _DashContentState extends State<DashContent> {
                       onTap: () {
                         Navigator.pop(context);
                         addNewAccount();
+                      },
+                    ),
+                  );
+                  _drawerList.add(
+                    ListTile(
+                      leading: const Icon(Icons.group_work_outlined),
+                      title: const Text('سفارش گروهی'),
+                      iconColor: textColor,
+                      onTap: () {
+                        Navigator.pop(context);
+                        newOrderGroup();
                       },
                     ),
                   );
@@ -284,6 +304,17 @@ class _DashContentState extends State<DashContent> {
                       },
                     ),
                   );
+                  _drawerList.add(
+                    ListTile(
+                      leading: const Icon(Icons.person_add_alt_outlined),
+                      title: const Text('سفارش گروهی'),
+                      iconColor: textColor,
+                      onTap: () {
+                        Navigator.pop(context);
+                        newOrderGroup();
+                      },
+                    ),
+                  );
                 }
 
                 return ListView(
@@ -298,7 +329,7 @@ class _DashContentState extends State<DashContent> {
     );
     //
     Widget _body;
-    PreferredSizeWidget? _appBar;
+
     if (_account != null) {
       _body = AccountHome(
         _account!,
@@ -332,21 +363,9 @@ class _DashContentState extends State<DashContent> {
           ),
         );
       }
-
-      _appBar = AppBar(
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: toSettingsScreen,
-            tooltip: "تنظیمات",
-          ),
-        ],
-      );
     }
 
     return Scaffold(
-      appBar: _appBar,
       drawer: _drawer,
       body: _body,
       backgroundColor: Colors.purple,

@@ -6,6 +6,7 @@ import 'package:nobibot/models/property.dart';
 
 import '../api/services.dart';
 import '../models/account.dart';
+import '../models/group.order.req.dart';
 import '../models/order.dart';
 import '../models/response.dart';
 import '../widgets/snackbar.dart';
@@ -48,10 +49,6 @@ class _AccountHomeState extends State<AccountHome>
     tabController = TabController(length: 2, vsync: this);
   }
 
-  toSettingsScreen() {
-    print("toSettingsScreen");
-  }
-
   newOrder() async {
     Order? order = await showModalBottomSheet(
       context: context,
@@ -65,27 +62,26 @@ class _AccountHomeState extends State<AccountHome>
       RSnackBar.info(
         context,
         "در حال ارسال درخواست ...",
-        duration: const Duration(seconds: 60000),
+        duration: const Duration(seconds: 120),
       );
 
       ErrorAction _err = ErrorAction(
         response: ((res) {
-          print("ffff");
-          print(res);
+          RSnackBar.error(context, "خطا: " + res);
         }),
         connection: () {
-          print("cccc");
+          RSnackBar.error(context, "خطای اتصال");
         },
       );
 
+      GroupOrderRequest req = GroupOrderRequest(accounts: null, order: order);
+
       ApiResponse _result =
-          await Services.newOrder(widget.account.token!, order, _err);
+          await Services.newOrder(widget.account.token!, req, _err);
 
       RSnackBar.hide(context);
       if (_result.ok!) {
         RSnackBar.success(context, "سفارش شما با موفقیت ایجاد شد");
-      } else {
-        RSnackBar.error(context, "خطایی رخ داد");
       }
     }
   }
@@ -194,13 +190,6 @@ class _AccountHomeState extends State<AccountHome>
             softWrap: true,
           ),
           elevation: 0,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: toSettingsScreen,
-              tooltip: "تنظیمات",
-            ),
-          ],
         ),
       ],
       body: Builder(
@@ -230,7 +219,7 @@ class _AccountHomeState extends State<AccountHome>
                           ),
                           Tab(
                             text: "سفارش ها",
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -274,108 +263,101 @@ class OurDelegate extends SliverPersistentHeaderDelegate {
     double shrinkPercentage = min(1, shrinkOffset / (maxExtent - minExtent));
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         image: DecorationImage(
-          image: AssetImage("assets/images/drawerbg.jpg"),
+          image: const AssetImage("assets/images/drawerbg.jpg"),
           fit: BoxFit.cover,
+          opacity: 1 - shrinkPercentage,
         ),
+        color: Colors.purple,
       ),
       child: Material(
         elevation: 0,
         color: Colors.transparent,
-        child: Stack(
-          children: [
-            if (shrinkPercentage != 0)
-              Opacity(
-                opacity: shrinkPercentage,
-                child: Positioned.fill(child: Container(color: Colors.purple)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Expanded(
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  if (shrinkPercentage != 1)
+                    Opacity(
+                      opacity: 1 - shrinkPercentage,
+                      child: ElevatedButton(
+                        onPressed: onNewOrder,
+                        child: const Text("ثبت سفارش جدید"),
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all(
+                            Colors.purple,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Expanded(
-                  child: Stack(
-                    alignment: Alignment.bottomCenter,
+            ),
+            ConstrainedBox(
+              constraints: BoxConstraints.tightFor(
+                height: max(
+                  60,
+                  80 * (1 - shrinkPercentage),
+                ),
+              ),
+              child: FittedBox(
+                child: Container(
+                  padding: const EdgeInsets.all(30),
+                  width: MediaQuery.of(context).size.width,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (shrinkPercentage != 1)
-                        Opacity(
-                          opacity: 1 - shrinkPercentage,
-                          child: ElevatedButton(
-                            onPressed: onNewOrder,
-                            child: const Text("ثبت سفارش جدید"),
-                            style: ButtonStyle(
-                              backgroundColor: MaterialStateProperty.all(
-                                Colors.purple,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                ConstrainedBox(
-                  constraints: BoxConstraints.tightFor(
-                    height: max(
-                      60,
-                      80 * (1 - shrinkPercentage),
-                    ),
-                  ),
-                  child: FittedBox(
-                    child: Container(
-                      padding: const EdgeInsets.all(30),
-                      width: MediaQuery.of(context).size.width,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.account_balance_wallet,
-                            size: 40,
-                          ),
-                          const Padding(padding: EdgeInsets.all(5)),
-                          Text(
-                            (balance != null ? balance.toString() : "-"),
-                            style: const TextStyle(
-                              fontSize: 35,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const Padding(padding: EdgeInsets.all(2)),
-                          Text(
-                            (balance != null ? "ريال" : ""),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w300,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                      const Icon(
+                        Icons.account_balance_wallet,
+                        size: 40,
                       ),
-                    ),
-                  ),
-                ),
-                Container(
-                  color: Colors.transparent,
-                  height: 50,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      Container(
-                        height: 50,
-                        decoration: const BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(20.0),
-                            topRight: Radius.circular(20.0),
-                          ),
+                      const Padding(padding: EdgeInsets.all(5)),
+                      Text(
+                        (balance != null ? balance.toString() : "-"),
+                        style: const TextStyle(
+                          fontSize: 35,
+                          fontWeight: FontWeight.w500,
                         ),
-                        child: tabBar,
+                        textAlign: TextAlign.center,
+                      ),
+                      const Padding(padding: EdgeInsets.all(2)),
+                      Text(
+                        (balance != null ? "ريال" : ""),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w300,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
+            ),
+            Container(
+              color: Colors.transparent,
+              height: 50,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  Container(
+                    height: 50,
+                    decoration: const BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20.0),
+                        topRight: Radius.circular(20.0),
+                      ),
+                    ),
+                    child: tabBar,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

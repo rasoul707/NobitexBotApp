@@ -14,6 +14,7 @@ class ApiResponse {
   Account? account;
   List<Order>? orders;
   List<Property>? properties;
+  List<String>? pairs;
 
   ApiResponse({
     this.ok,
@@ -23,6 +24,7 @@ class ApiResponse {
     this.account,
     this.orders,
     this.properties,
+    this.pairs,
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) =>

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../api/services.dart';
+import '../data/colors.dart';
 import '../helpers/keyboard.visible.dart';
 import '../models/order.dart';
+import '../models/response.dart';
 import '../models/stage.dart';
+import '../widgets/snackbar.dart';
 
 class AddNewOrder extends StatefulWidget {
   const AddNewOrder({
@@ -20,12 +24,15 @@ class _AddNewOrderState extends State<AddNewOrder>
   final TextEditingController priceController = TextEditingController();
   final TextEditingController totalAmountController = TextEditingController();
   final TextEditingController stagesCountController = TextEditingController();
+  final TextEditingController stopPriceController = TextEditingController();
   List<List<TextEditingController>> stagesControllers = [];
 
   //
-  String pair = 'xrpusdt';
+  List<String> pairsList = [''];
+  String pair = '';
   String type = 'buy';
   String actionType = 'normal';
+  String execution = 'limit';
   int stagesCount = 0;
   String errors = '';
   bool disabled = false;
@@ -51,29 +58,61 @@ class _AddNewOrderState extends State<AddNewOrder>
         stagesCount = value;
       });
     });
+
+    getPairsList();
   }
 
   setType(String t) {
     setState(() {
       type = t;
       actionType = 'normal';
+      execution = 'limit';
     });
     amountController.clear();
     priceController.clear();
     totalAmountController.clear();
     stagesCountController.clear();
+    stopPriceController.clear();
     FocusScope.of(context).unfocus();
   }
 
   setActionType(String t) {
     setState(() {
       actionType = t;
+      execution = 'limit';
     });
     amountController.clear();
     priceController.clear();
     totalAmountController.clear();
     stagesCountController.clear();
+    stopPriceController.clear();
     FocusScope.of(context).unfocus();
+  }
+
+  void setExecution(String? t) {
+    setState(() {
+      execution = t ?? 'limit';
+    });
+    stopPriceController.clear();
+    FocusScope.of(context).unfocus();
+  }
+
+  void setPair(String? p) {
+    setState(() {
+      pair = p ?? '';
+    });
+    setType('buy');
+  }
+
+  void getPairsList() async {
+    ApiResponse _result = await Services.getPairsList(null);
+
+    if (_result.ok!) {
+      setState(() {
+        pairsList = _result.pairs!;
+        pair = _result.pairs!.elementAt(0);
+      });
+    }
   }
 
   submit(context) async {
@@ -83,6 +122,8 @@ class _AddNewOrderState extends State<AddNewOrder>
       actionType: actionType,
       amount: double.tryParse(amountController.text),
       price: double.tryParse(priceController.text),
+      execution: execution,
+      stopPrice: double.tryParse(stopPriceController.text),
       totalAmount: double.tryParse(totalAmountController.text),
       stages: stagesControllers.map((e) {
         return Stage(
@@ -95,53 +136,63 @@ class _AddNewOrderState extends State<AddNewOrder>
     bool isValid = true;
     String error = '';
 
-    if (order.actionType == 'stage') {
-      if (order.totalAmount == null || order.totalAmount == 0) {
-        isValid = false;
-        if (error.isEmpty) error = 'حجم کل رو وارد کنید';
-      }
-      if (order.stages == null || order.stages!.isEmpty) {
-        isValid = false;
-        if (error.isEmpty) error = 'تعداد پله ها رو وارد کنید';
-      }
-      double sum = 0;
+    if (order.pair == '') {
+      isValid = false;
+      if (error.isEmpty) error = 'جفت ارز را انتخاب کنید';
+    }
+    if (isValid) {
+      if (order.actionType == 'stage') {
+        if (order.totalAmount == null || order.totalAmount == 0) {
+          isValid = false;
+          if (error.isEmpty) error = 'حجم کل رو وارد کنید';
+        }
+        if (order.stages == null || order.stages!.isEmpty) {
+          isValid = false;
+          if (error.isEmpty) error = 'تعداد پله ها رو وارد کنید';
+        }
+        double sum = 0;
 
-      for (int i = 0; i < order.stages!.length; i++) {
-        double? pr = order.stages!.elementAt(i).percent;
-        double? pc = order.stages!.elementAt(i).price;
-        if (pr == null || pr == 0.0) {
-          isValid = false;
-          if (error.isEmpty) {
-            error = 'درصد پله ' + (i + 1).toString() + ' رو وارد کنید';
+        for (int i = 0; i < order.stages!.length; i++) {
+          double? pr = order.stages!.elementAt(i).percent;
+          double? pc = order.stages!.elementAt(i).price;
+          if (pr == null || pr == 0.0) {
+            isValid = false;
+            if (error.isEmpty) {
+              error = 'درصد پله ' + (i + 1).toString() + ' رو وارد کنید';
+            }
+            break;
           }
-          break;
-        }
-        if (pc == null || pc == 0.0) {
-          isValid = false;
-          if (error.isEmpty) {
-            error = 'قیمت پله ' + (i + 1).toString() + ' رو وارد کنید';
+          if (pc == null || pc == 0.0) {
+            isValid = false;
+            if (error.isEmpty) {
+              error = 'قیمت پله ' + (i + 1).toString() + ' رو وارد کنید';
+            }
+            break;
           }
-          break;
+          sum += pr;
         }
-        sum += pr;
-      }
-      if (sum != 100) {
-        isValid = false;
-        if (error.isEmpty) error = 'درصد پله ها رو به درستی وارد نکرده اید';
-      }
-    } else {
-      if (order.amount == null || order.amount == 0) {
-        isValid = false;
-        if (error.isEmpty) error = 'حجم رو وارد کنید';
-      }
-      if (order.price == null || order.price == 0) {
-        isValid = false;
-        if (error.isEmpty) error = 'قیمت رو وارد کنید';
+        if (sum != 100) {
+          isValid = false;
+          if (error.isEmpty) error = 'درصد پله ها رو به درستی وارد نکرده اید';
+        }
+      } else {
+        if (order.amount == null || order.amount == 0) {
+          isValid = false;
+          if (error.isEmpty) error = 'حجم رو وارد کنید';
+        }
+        if (order.price == null || order.price == 0) {
+          isValid = false;
+          if (error.isEmpty) error = 'قیمت رو وارد کنید';
+        }
+        if (['stop_limit', 'stop_market'].contains(order.execution) &&
+            (order.stopPrice == null || order.stopPrice == 0)) {
+          isValid = false;
+          if (error.isEmpty) error = 'حد ضرر رو وارد کنید';
+        }
       }
     }
 
     if (!isValid) {
-      print(error);
       setState(() {
         errors = error;
       });
@@ -228,6 +279,86 @@ class _AddNewOrderState extends State<AddNewOrder>
         ),
       ),
       const Padding(padding: EdgeInsets.all(5)),
+      SizedBox(
+        height: 50,
+        // width: 50,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            GestureDetector(
+              onTap: () => setExecution('market'),
+              child: Chip(
+                label: const Text(
+                  'Market',
+                  style: TextStyle(color: whiteTextColor),
+                ),
+                shape:
+                    const StadiumBorder(side: BorderSide(color: Colors.purple)),
+                backgroundColor:
+                    execution == 'market' ? Colors.purple : bgColor,
+              ),
+            ),
+            const Padding(padding: EdgeInsets.all(5)),
+            GestureDetector(
+              onTap: () => setExecution('limit'),
+              child: Chip(
+                label: const Text(
+                  'Limit',
+                  style: TextStyle(color: whiteTextColor),
+                ),
+                shape:
+                    const StadiumBorder(side: BorderSide(color: Colors.purple)),
+                backgroundColor: execution == 'limit' ? Colors.purple : bgColor,
+              ),
+            ),
+            const Padding(padding: EdgeInsets.all(5)),
+            GestureDetector(
+              onTap: () => setExecution('stop_market'),
+              child: Chip(
+                label: const Text(
+                  'Stop Market',
+                  style: TextStyle(color: whiteTextColor),
+                ),
+                shape:
+                    const StadiumBorder(side: BorderSide(color: Colors.purple)),
+                backgroundColor:
+                    execution == 'stop_market' ? Colors.purple : bgColor,
+              ),
+            ),
+            const Padding(padding: EdgeInsets.all(5)),
+            GestureDetector(
+              onTap: () => setExecution('stop_limit'),
+              child: Chip(
+                label: const Text(
+                  'Stop Limit',
+                  style: TextStyle(color: whiteTextColor),
+                ),
+                shape:
+                    const StadiumBorder(side: BorderSide(color: Colors.purple)),
+                backgroundColor:
+                    execution == 'stop_limit' ? Colors.purple : bgColor,
+              ),
+            ),
+            const Padding(padding: EdgeInsets.all(5)),
+            GestureDetector(
+              // onTap: () => setExecution('oco'),
+              child: Chip(
+                label: const Text(
+                  'OCO',
+                  style: TextStyle(color: whiteTextColor),
+                ),
+                shape: const StadiumBorder(
+                  side: BorderSide(
+                    color: Colors.white12,
+                  ),
+                ),
+                backgroundColor: execution == 'oco' ? Colors.purple : bgColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const Padding(padding: EdgeInsets.all(5)),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.max,
@@ -265,6 +396,30 @@ class _AddNewOrderState extends State<AddNewOrder>
           ),
         ],
       ),
+      const Padding(padding: EdgeInsets.all(10)),
+      ['stop_market', 'stop_limit'].contains(execution)
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: stopPriceController,
+                    textInputAction: TextInputAction.next,
+                    textDirection: TextDirection.ltr,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "حد ضرر",
+                      contentPadding: EdgeInsets.only(left: 15, right: 15),
+                    ),
+                    enabled: !disabled,
+                  ),
+                ),
+              ],
+            )
+          : Container(),
     ];
 
     final stageAction = [
@@ -341,6 +496,23 @@ class _AddNewOrderState extends State<AddNewOrder>
                         style: Theme.of(context).textTheme.titleMedium!,
                         textAlign: TextAlign.center,
                       ),
+                    ),
+                    DropdownButton(
+                      value: pair,
+                      onChanged: setPair,
+                      items: pairsList.map((p) {
+                        return DropdownMenuItem(
+                          child: Text(
+                            p,
+                            style: const TextStyle(
+                              color: Color.fromARGB(255, 255, 255, 255),
+                            ),
+                          ),
+                          value: p,
+                        );
+                      }).toList(),
+                      focusColor: Colors.white,
+                      dropdownColor: Colors.purple,
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: 15, bottom: 15),

@@ -15,6 +15,7 @@ class Account {
   String? device;
   String? profileName;
   double? balance;
+  double? ratio;
 
   Account({
     this.id,
@@ -25,6 +26,7 @@ class Account {
     this.device,
     this.profileName,
     this.balance,
+    this.ratio,
   });
 
   factory Account.fromJson(Map<String, dynamic> json) =>
@@ -33,7 +35,7 @@ class Account {
 
   @override
   String toString() {
-    return 'Account{id: $id, label: $label, email: $email, password: $password, token: $token, device: $device, profileName: $profileName, balance: $balance}';
+    return 'Account{id: $id, label: $label, email: $email, password: $password, token: $token, device: $device, profileName: $profileName, balance: $balance, ratio: $ratio}';
   }
 }
 

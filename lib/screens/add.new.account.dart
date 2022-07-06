@@ -45,6 +45,7 @@ class _AddNewAccountState extends State<AddNewAccount> {
         password: password,
         token: _result.addAccount!.token,
         device: _result.addAccount!.device,
+        ratio: 10,
       );
       Account? mm = await getAccountByEmail(email);
       if (mm != null) {
@@ -55,6 +56,7 @@ class _AddNewAccountState extends State<AddNewAccount> {
         account.id = await insertAccount(account);
         RSnackBar.success(context, "حساب کاربری جدید اضافه شد :)");
       }
+      print("##" + account.toString());
       Navigator.pop(context, account);
     } else {
       Navigator.pop(context);

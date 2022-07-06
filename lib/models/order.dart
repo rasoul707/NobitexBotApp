@@ -13,6 +13,9 @@ class Order {
   double? amount;
   double? price;
 
+  String? execution;
+  double? stopPrice;
+
   double? totalAmount;
   List<Stage>? stages;
 
@@ -22,6 +25,8 @@ class Order {
     this.actionType,
     this.amount,
     this.price,
+    this.execution,
+    this.stopPrice,
     this.totalAmount,
     this.stages,
   });

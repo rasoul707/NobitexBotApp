@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:nobibot/models/order.dart';
 import '../models/account.dart';
+import '../models/group.order.req.dart';
 import '../models/response.dart';
 
 import 'main.dart';
@@ -64,23 +65,24 @@ class Services {
           .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
 
   static Future<ApiResponse> newOrder(
-          String t, Order m, ErrorAction? e) async =>
+          String t, GroupOrderRequest m, ErrorAction? e) async =>
       await API(await dioWithToken(t))
           .newOrder(m)
           .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
-
-
 
   static Future<ApiResponse> getProperties(String t, ErrorAction? e) async =>
       await API(await dioWithToken(t))
           .getProperties()
           .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
 
-
-          
   static Future<ApiResponse> getOrders(String t, ErrorAction? e) async =>
       await API(await dioWithToken(t))
           .getOrders()
+          .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
+
+  static Future<ApiResponse> getPairsList(ErrorAction? e) async =>
+      await API(Dio())
+          .getPairsList()
           .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
   //
   //
