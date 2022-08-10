@@ -39,7 +39,7 @@ class _DashContentState extends State<DashContent> {
   @override
   void initState() {
     super.initState();
-    SchedulerBinding.instance?.addPostFrameCallback((_) async {
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
       if (widget.fromDBAccount != null) {
         setState(() {
           hasAccount = true;
@@ -60,7 +60,7 @@ class _DashContentState extends State<DashContent> {
     _getAccount(fromDB: fromDB, noRefresh: true);
   }
 
-  addNewAccount() async {
+  addNewAccount({bool confirm = false}) async {
     Account? data = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -69,6 +69,7 @@ class _DashContentState extends State<DashContent> {
           labelController: labelController,
           emailController: emailController,
           passwordController: passwordController,
+          confirm: confirm,
         );
       },
     );
@@ -117,7 +118,6 @@ class _DashContentState extends State<DashContent> {
       if ((result is bool && result) || (forceRemove is bool && forceRemove)) {
         ApiResponse _result =
             await Services.removeAccount(account.token!, null);
-        print(account);
 
         await deleteAccount(account.id!);
         //
@@ -143,7 +143,7 @@ class _DashContentState extends State<DashContent> {
         if (forceRemove is bool && forceRemove) {
           RSnackBar.error(
             context,
-            "دسترستی شما به پایان رسید. مجدد لاگین کنید",
+            "دسترسی شما به پایان رسید. باید مجدد لاگین کنید",
           );
         } else {
           RSnackBar.success(context, "با موفقیت حذف شد :)");
@@ -172,16 +172,13 @@ class _DashContentState extends State<DashContent> {
 
       if (_result.ok!) {
         account.balance = _result.account?.balance;
-
         setState(() {
           _account = account;
         });
-
         updateAccount(account);
 
         ApiResponse ordersRes =
             await Services.getOrders(_account!.token!, null);
-
         if (ordersRes.ok! && ordersRes.orders != null) {
           setState(() {
             orders = ordersRes.orders!;
@@ -197,11 +194,15 @@ class _DashContentState extends State<DashContent> {
           });
         }
       } else {
-        if (_result.code == 'EXPIRE_SESSION') {
-          _removeAccount(account, forceRemove: true);
-        } else {
-          RSnackBar.error(context, "مشکلی پیش آمده است");
-        }
+        account.ok = 0;
+        setState(() {
+          _account = account;
+        });
+        updateAccount(account);
+        labelController.text = account.label!;
+        labelController.text = account.label!;
+        emailController.text = account.email!;
+        addNewAccount(confirm: true);
       }
     }
   }
@@ -280,6 +281,14 @@ class _DashContentState extends State<DashContent> {
                         leading:
                             const Icon(Icons.account_balance_wallet_outlined),
                         title: Text(snapshot.data!.elementAt(i).label!),
+                        trailing: snapshot.data!.elementAt(i).ok! == 0
+                            ? const Text(
+                                "نیاز به تایید",
+                                style: TextStyle(
+                                  color: Color.fromARGB(255, 238, 0, 0),
+                                ),
+                              )
+                            : const Text(""),
                         onTap: () {
                           Navigator.pop(context);
                           setHomeAccountID(snapshot.data!.elementAt(i).id);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:nobibot/models/account.dart';
 import 'package:nobibot/models/group.order.dart';
 import '../api/services.dart';
@@ -24,11 +25,31 @@ class AddNewOrderGroup extends StatefulWidget {
 class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
   List<Account> accounts = [];
   List<TextEditingController> ratioController = [];
+  bool loading = true;
 
   Future<void> accountList() async {
     final m = await getAccountsList();
+
+    for (int i = 0; i < m.length; i++) {
+      String? tok = m.elementAt(i).token;
+      if (tok is String) {
+        ApiResponse _result = await Services.getAccount(tok, null);
+        if (_result.ok!) {
+          m.elementAt(i).balance = _result.account?.balance;
+          m.elementAt(i).ok = 1;
+        } else {
+          m.elementAt(i).ok = 0;
+        }
+      } else {
+        m.elementAt(i).ok = 0;
+      }
+
+      updateAccount(m.elementAt(i));
+    }
+
     setState(() {
       accounts = m;
+      loading = false;
     });
 
     for (int i = 0; i < m.length; i++) {
@@ -44,8 +65,6 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
 
     accountList();
   }
-
-  submit() {}
 
   newOrderDialog() async {
     List<GroupOrder> reqAccounts = [];
@@ -126,6 +145,20 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
         ),
       ),
     );
+    if (loading) {
+      tabContent.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            "در حال بارگذاری ...",
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: whiteTextColor,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
     for (int i = 0; i < accounts.length; i++) {
       Account e = accounts[i];
       tabContent.add(
@@ -135,17 +168,34 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
           leading: const Icon(Icons.person, color: whiteTextColor),
           trailing: SizedBox(
             width: 100,
-            child: TextField(
-              textDirection: TextDirection.ltr,
-              decoration: const InputDecoration(
-                hintText: 'ضریب',
-                hintStyle: TextStyle(
-                  color: whiteTextColor,
-                ),
-              ),
-              keyboardType: TextInputType.number,
-              controller: ratioController.elementAt(i),
-            ),
+            child: e.ok == 1
+                ? TextField(
+                    textDirection: TextDirection.ltr,
+                    decoration: const InputDecoration(
+                      hintText: 'ضریب',
+                      hintStyle: TextStyle(
+                        color: whiteTextColor,
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    controller: ratioController.elementAt(i),
+                    onChanged: (val) {
+                      int? ll = int.tryParse(val);
+                      if (ll is int && ll >= 10) {
+                        ratioController.elementAt(i).text = "10";
+                      }
+                    },
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                    ],
+                  )
+                : const Text(
+                    "نیاز به تایید",
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 238, 0, 0),
+                    ),
+                  ),
           ),
         ),
       );
@@ -155,7 +205,7 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
       SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: newOrderDialog,
+          onPressed: loading ? null : newOrderDialog,
           child: const Text("ثبت سفارش"),
         ),
       ),

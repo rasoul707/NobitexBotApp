@@ -16,6 +16,7 @@ class Account {
   String? profileName;
   double? balance;
   double? ratio;
+  int? ok;
 
   Account({
     this.id,
@@ -27,6 +28,7 @@ class Account {
     this.profileName,
     this.balance,
     this.ratio,
+    this.ok,
   });
 
   factory Account.fromJson(Map<String, dynamic> json) =>

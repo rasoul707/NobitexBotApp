@@ -13,11 +13,13 @@ class AddNewAccount extends StatefulWidget {
     required this.labelController,
     required this.emailController,
     required this.passwordController,
+    required this.confirm,
   }) : super(key: key);
 
   final TextEditingController labelController;
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final bool confirm;
 
   @override
   _AddNewAccountState createState() => _AddNewAccountState();
@@ -46,6 +48,7 @@ class _AddNewAccountState extends State<AddNewAccount> {
         token: _result.addAccount!.token,
         device: _result.addAccount!.device,
         ratio: 10,
+        ok: 1,
       );
       Account? mm = await getAccountByEmail(email);
       if (mm != null) {
@@ -56,7 +59,6 @@ class _AddNewAccountState extends State<AddNewAccount> {
         account.id = await insertAccount(account);
         RSnackBar.success(context, "حساب کاربری جدید اضافه شد :)");
       }
-      print("##" + account.toString());
       Navigator.pop(context, account);
     } else {
       Navigator.pop(context);
@@ -94,7 +96,7 @@ class _AddNewAccountState extends State<AddNewAccount> {
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text(
-            "افزودن حساب",
+            widget.confirm ? "تایید حساب" : "افزودن حساب",
             style: Theme.of(context).textTheme.titleMedium!,
             textAlign: TextAlign.center,
           ),
@@ -112,7 +114,7 @@ class _AddNewAccountState extends State<AddNewAccount> {
               labelText: "عنوان",
               prefixIcon: Icon(Icons.label),
             ),
-            enabled: !disabled,
+            enabled: widget.confirm ? false : !disabled,
           ),
         ),
         Padding(
@@ -128,7 +130,7 @@ class _AddNewAccountState extends State<AddNewAccount> {
               labelText: "ایمیل",
               prefixIcon: Icon(Icons.alternate_email),
             ),
-            enabled: !disabled,
+            enabled: widget.confirm ? false : !disabled,
           ),
         ),
         Padding(
@@ -151,7 +153,7 @@ class _AddNewAccountState extends State<AddNewAccount> {
           padding: const EdgeInsets.only(bottom: 15, left: 25, right: 25),
           child: ElevatedButton(
             onPressed: disabled ? null : () => submit(context),
-            child: const Text("افزودن"),
+            child: Text(widget.confirm ? "تایید" : "افزودن"),
           ),
         ),
       ],
