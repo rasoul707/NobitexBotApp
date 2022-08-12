@@ -75,13 +75,13 @@ class _AccountHomeState extends State<AccountHome>
       );
 
       GroupOrderRequest req = GroupOrderRequest(accounts: null, order: order);
-
-      ApiResponse _result =
-          await Services.newOrder(widget.account.token!, req, _err);
+      ApiResponse _result = await Services.newOrder(widget.account.token!, req);
 
       RSnackBar.hide(context);
       if (_result.ok!) {
         RSnackBar.success(context, "سفارش شما با موفقیت ایجاد شد");
+      } else {
+        RSnackBar.error(context, _result.code!);
       }
     }
   }

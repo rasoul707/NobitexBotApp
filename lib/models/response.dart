@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import './account.dart';
+import 'group.order.response.dart';
 import 'order.dart';
 import 'property.dart';
 
@@ -15,6 +16,7 @@ class ApiResponse {
   List<Order>? orders;
   List<Property>? properties;
   List<String>? pairs;
+  List<ApiResponse>? groupOrder;
 
   ApiResponse({
     this.ok,
@@ -25,6 +27,7 @@ class ApiResponse {
     this.orders,
     this.properties,
     this.pairs,
+    this.groupOrder,
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) =>

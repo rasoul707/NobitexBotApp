@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nobibot/models/account.dart';
 import 'package:nobibot/models/group.order.dart';
+import 'package:nobibot/models/group.order.response.dart';
 import '../api/services.dart';
 import '../data/colors.dart';
 import '../database/accounts_db.dart';
@@ -26,6 +27,7 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
   List<Account> accounts = [];
   List<TextEditingController> ratioController = [];
   bool loading = true;
+  List<String?> errors = [];
 
   Future<void> accountList() async {
     final m = await getAccountsList();
@@ -97,26 +99,21 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
         duration: const Duration(seconds: 120),
       );
 
-      ErrorAction _err = ErrorAction(
-        response: ((res) {
-          RSnackBar.error(context, "خطا: " + res);
-        }),
-        connection: () {
-          RSnackBar.error(context, "خطای اتصال");
-        },
-      );
-
       GroupOrderRequest req = GroupOrderRequest(
         accounts: reqAccounts,
         order: order,
       );
 
-      ApiResponse _result = await Services.newOrder('', req, _err);
+      ApiResponse _result = await Services.newOrder('', req);
 
       RSnackBar.hide(context);
-      if (_result.ok!) {
-        RSnackBar.success(context, "سفارش شما با موفقیت ایجاد شد");
+      List<String?> ee = [];
+      for (ApiResponse res in _result.groupOrder!) {
+        ee.add(res.code);
       }
+      setState(() {
+        errors = ee;
+      });
     }
   }
 
@@ -161,7 +158,7 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
     }
     for (int i = 0; i < accounts.length; i++) {
       Account e = accounts[i];
-      tabContent.add(
+      tabContent.addAll([
         ListTile(
           title: Text(e.label!),
           subtitle: Text(e.balance.toString() + " ريال"),
@@ -198,7 +195,15 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
                   ),
           ),
         ),
-      );
+        Text(
+          errors.isNotEmpty ? (errors.elementAt(i) ?? "") : "",
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Color.fromARGB(255, 238, 0, 0),
+          ),
+        ),
+        const Padding(padding: EdgeInsets.all(3))
+      ]);
     }
 
     tabContent.add(
@@ -210,6 +215,21 @@ class _AddNewOrderGroupState extends State<AddNewOrderGroup> {
         ),
       ),
     );
+
+    if (errors.isNotEmpty) {
+      tabContent.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            "درخواست شما به جز مواردی که دارای خطا هستند اجرا شد",
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: Color.fromARGB(255, 192, 196, 192),
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(

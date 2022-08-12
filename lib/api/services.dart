@@ -1,10 +1,32 @@
 import 'package:dio/dio.dart';
-import 'package:nobibot/models/order.dart';
 import '../models/account.dart';
 import '../models/group.order.req.dart';
 import '../models/response.dart';
 
 import 'main.dart';
+
+ApiResponse serviceError(Object obj) {
+  if (obj.runtimeType == DioError) {
+    obj = (obj as DioError);
+    switch (obj.type) {
+      case DioErrorType.response:
+        return ApiResponse.fromJson(obj.response?.data);
+      case DioErrorType.connectTimeout:
+        return ApiResponse(ok: false, code: "ConnectTimeout");
+      case DioErrorType.receiveTimeout:
+        return ApiResponse(ok: false, code: "ReceiveTimeout");
+      case DioErrorType.sendTimeout:
+        return ApiResponse(ok: false, code: "SendTimeout");
+      case DioErrorType.other:
+        return ApiResponse(ok: false, code: "Other");
+      case DioErrorType.cancel:
+        return ApiResponse(ok: false, code: "Cancel");
+      default:
+        return ApiResponse(ok: false, code: "UnknownDioError");
+    }
+  }
+  return ApiResponse(ok: false, code: "UnknownError");
+}
 
 class Services {
   static dynamic errorHandler(Object obj, err, ty) {
@@ -15,7 +37,7 @@ class Services {
       switch (obj.type) {
         case DioErrorType.response:
           if (err is ErrorAction && err.response is void Function(dynamic)) {
-            err.response!(obj.response!);
+            err.response!(obj.response);
           }
           break;
         case DioErrorType.connectTimeout:
@@ -64,11 +86,8 @@ class Services {
           .getAccount()
           .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
 
-  static Future<ApiResponse> newOrder(
-          String t, GroupOrderRequest m, ErrorAction? e) async =>
-      await API(await dioWithToken(t))
-          .newOrder(m)
-          .catchError((o) => errorHandler(o, e, ApiResponse(ok: false)));
+  static Future<ApiResponse> newOrder(String t, GroupOrderRequest m) async =>
+      await API(await dioWithToken(t)).newOrder(m).catchError(serviceError);
 
   static Future<ApiResponse> getProperties(String t, ErrorAction? e) async =>
       await API(await dioWithToken(t))
